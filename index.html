@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <title>Поиск информации по фильму</title>
+    <style>
+        body {
+            font-family: Georgia, 'Times New Roman', Times, serif;
+            -webkit-transition: background-color 1s;
+            transition: background-color 1s;
+        }
+        html, body {
+            min-height: 100%; 
+        }
+        body.loading {
+            background: #333 url('http://code.jquery.com/mobile/1.3.1/images/ajax-loader.gif') no-repeat 50% 50%;
+            -webkit-transition: background-color 0;
+            transition: background-color 0;
+            opacity: 0;
+            -webkit-transition: opacity 0;
+            transition: opacity 0;
+        }
+		.container {
+			margin: 0 auto;
+			align-content: center;
+            text-align: center;
+            width: 1000px;
+		}        
+        #headtext {
+            font-size: 18px;
+        }
+        #saveForm{
+            border-radius: 5px;
+        }
+        #cbi {
+            margin-top: 10px;
+        }
+        #developer_info {
+            opacity: 0.4;
+            position: fixed;
+            bottom: 10px;
+            left: 50%;
+            margin-left: -57.17px; /*половина ширины кнопки*/
+        }
+        #developer_info:hover {
+            opacity: 1;
+        }
+        form p {
+            margin: 5px auto;
+        }
+        table {
+			margin-left: auto;
+    		margin-right: auto;
+		}
+        td {
+            text-align: center;
+            align-content: center;  
+			padding: 2.5px;
+            max-width:130px;
+        }
+        .tdposter {
+            max-width:150px;
+        }
+        .poster {
+            max-width:150px;            
+            height:auto;
+            max-height:225px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <form role="form" action="" method="POST">
+            <p id="headtext"><b>По каким параметрам производить поиск фильмов?</b></p>
+            <p>искать
+                <select id="type">
+                    <option selected value="ALL">все</option>
+                    <option value="FILM">фильмы</option>
+                    <option value="TV_SHOW">сериалы</option>
+                </select>
+            </p>
+            <p>с рейтингом от
+                <input type="number" min="0" max="10" placeholder="0" name="ratingFrom" id="ratingFrom">
+                до
+                <input type="number" min="0" max="10" placeholder="10" name="ratingTo" id="ratingTo">
+            </p>
+            <p>
+                по годам с
+                <input type="number" min="1000" max="3000" step="1" placeholder="1000" name="yearFrom" id="yearFrom">
+                по
+                <input type="number" min="1000" max="3000" step="1" placeholder="3000" name="yearTo" id="yearTo">                
+            </p>
+            <p>
+                отсортировать по
+                <select id="order">
+                    <option selected value="RATING">рейтингу</option>
+                    <option value="YEAR">году</option>
+                </select>
+            </p>
+            <input type="text" placeholder="Ключевое слово" name="keyword" id="keyword">
+            <button id="saveForm" type="button" onclick="getfilms()">ПОИСК</button>
+        </form>
+        <div class="output"></div>
+        <div class="loading"></div>
+        <input id="developer_info" type="button" value="О разработчике" onClick="if (window.confirm('Анисимов Максим Андреевич гр815\nдата создания - 20.01.2022\n\nпри нажатии ОК вы будите перенаправлены на Kinopoisk Api Unofficial'))
+        window.location.href='https://kinopoiskapiunofficial.tech/';">
+        <script>
+            $('#ratingFrom').on('input', function() {
+                $(this).val((i, v) => Math.max(this.min, Math.min(this.max, v)));
+            });
+            $('#ratingTo').on('input', function() {
+                $(this).val((i, v) => Math.max(this.min, Math.min(this.max, v)));
+            });
+            //значек загрузки
+            var body = document.getElementsByTagName('body')[0];
+            var removeLoading = function() {
+                    setTimeout(function() {
+                        body.className = body.className.replace(/loading/, '');
+                }, 3000);
+            };
+            removeLoading();
+            function getfilms() {
+                var order = document.querySelector('#order').value;
+                var type = document.querySelector('#type').value;
+                var ratingFrom = document.getElementById("ratingFrom").value;
+                var ratingTo = document.getElementById("ratingTo").value;
+                var yearFrom = document.getElementById("yearFrom").value;
+                var yearTo = document.getElementById("yearTo").value;
+                var keyword = document.getElementById("keyword").value;
+                var zapros = `https://kinopoiskapiunofficial.tech/api/v2.2/films?order=${order}&type=${type}&rating&ratingFrom=${ratingFrom}&ratingTo=${ratingTo}&yearFrom=${yearFrom}&yearTo=${yearTo}&keyword=${keyword}&page=1`
+                fetch(zapros, {
+                    method: 'GET',
+                    headers: {
+                        'X-API-KEY': '6fda7d94-0b16-485c-a765-53d885151e32',
+                        'Content-Type': 'application/json',
+                    },
+                })                
+                .then(function (response) {
+                    return response.json()
+                })
+                .then(function (data) {
+                    console.log(data)
+                    var startoutput = `<table border=2><tr><td>№</td><td>название</td><td>жанр</td><td>год</td><td>тип</td><td class='tdposter'>постер</td><td>оценка на кинопоиске</td><td>оценка Imdb</td></tr>`
+                    for (var x=0; x<20; x++) {
+                        var typeru
+                        if (data["items"][x]["type"] !="FILM") {
+                            if (data["items"][x]["type"] !="TV_SERIES") {
+                                if (data["items"][x]["type"] !="MINI_SERIES") {
+                                    if (data["items"][x]["type"] !="VIDEO") {
+                                        var typeru="неизвестно" 
+                                    }
+                                    else
+                                    var typeru="видео"
+                                }
+                                else
+                                var typeru="минисериал";
+                            }
+                            else {
+                                var typeru="сериал";
+                            }
+                        }
+                        else {
+                            var typeru="фильм";
+                        }
+                        var genrecheck
+                        if (data["items"][x]["genres"] !="") {                            
+                            genrecheck = data["items"][x]["genres"]["0"]["genre"]
+                        }
+                        else {
+                            var genrecheck = "неизвестно"
+                        }                        
+                        var midoutput = `<tr><td>${x+1}</td><td>${data["items"][x]["nameRu"]}</td><td>${genrecheck}</td><td>${data["items"][x]["year"]}</td><td>${typeru}</td><td class='tdposter'><img class='poster' src='${data["items"][x]["posterUrlPreview"]}'/></td><td>${data["items"][x]["ratingKinopoisk"]}</td><td>${data["items"][x]["ratingImdb"]}</td></tr>`
+                        var midoutputtwo = `${midoutputtwo}${midoutput}`
+                    }
+                    var output = `${startoutput}${midoutputtwo}</table>`
+                    $(".output").html(output)
+                })
+            }
+        </script>
+        <?php
+        ?>
+    </div>
+</body>
+</html>
